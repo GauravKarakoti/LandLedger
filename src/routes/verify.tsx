@@ -4,7 +4,8 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PropertyCard } from "@/components/landledger/PropertyCard";
-import { useLedger } from "@/lib/landledger";
+
+import { getRegistryProperties } from "@/server/functions";
 
 export const Route = createFileRoute("/verify")({
   head: () => ({
@@ -14,31 +15,29 @@ export const Route = createFileRoute("/verify")({
         name: "description",
         content: "Public verification portal: search any parcel by ID, legal identifier or owner address.",
       },
-      { property: "og:title", content: "Verify a property — LandLedger" },
-      {
-        property: "og:description",
-        content: "Search the public land ledger and confirm the current on-chain owner of any parcel.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: async () => {
+    const properties = await getRegistryProperties();
+    return { properties };
+  },
   component: VerifyPortal,
 });
 
 function VerifyPortal() {
-  const ledger = useLedger();
+  const { properties } = Route.useLoaderData();
   const [query, setQuery] = useState("");
 
   const q = query.trim().toLowerCase();
+  
   const results = q
-    ? ledger.properties.filter((p) =>
+    ? properties.filter((p: any) =>
         [p.id, p.legalIdentifier, p.location, p.currentOwner, p.ownerName]
           .join(" ")
           .toLowerCase()
           .includes(q),
       )
-    : ledger.properties;
+    : properties;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
@@ -65,13 +64,13 @@ function VerifyPortal() {
             />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {results.length} of {ledger.properties.length} parcels shown
+            {results.length} of {properties.length} parcels shown
           </p>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {results.map((p) => (
+        {results.map((p: any) => (
           <PropertyCard key={p.id} property={p} />
         ))}
         {results.length === 0 && (

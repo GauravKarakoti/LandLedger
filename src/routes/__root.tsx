@@ -8,9 +8,14 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-
+import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { ErrorComponentProps } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
+import rainbowCss from "@rainbow-me/rainbowkit/styles.css?url";
+import { web3Config } from "../lib/web3";
 import { reportError } from "../lib/error-reporting";
+import { SiteHeader } from "@/components/landledger/SiteHeader";
 
 function NotFoundComponent() {
   return (
@@ -34,11 +39,14 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+  
   useEffect(() => {
-    reportError(error, { boundary: "tanstack_root_error_component" });
+    // 2. Safely cast the unknown error to an Error object for your reporting utility
+    const standardizedError = error instanceof Error ? error : new Error(String(error));
+    reportError(standardizedError, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
@@ -91,6 +99,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      {
+        rel: "stylesheet",
+        href: rainbowCss,
+      },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -118,9 +130,18 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-    </QueryClientProvider>
+    <WagmiProvider config={web3Config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={darkTheme()}>
+          {/* 2. Wrap the layout in a flex container so the header stays at the top */}
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <main className="flex-1">
+              <Outlet />
+            </main>
+          </div>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }

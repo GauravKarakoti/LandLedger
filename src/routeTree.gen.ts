@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ArchitectureRouteImport } from './routes/architecture'
 import { Route as DisputesRouteImport } from './routes/disputes'
 import { Route as TransferRouteImport } from './routes/transfer'
 import { Route as VerifyRouteImport } from './routes/verify'
@@ -19,11 +18,6 @@ import { Route as PropertyIdRouteImport } from './routes/property.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ArchitectureRoute = ArchitectureRouteImport.update({
-  id: '/architecture',
-  path: '/architecture',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DisputesRoute = DisputesRouteImport.update({
@@ -49,7 +43,6 @@ const PropertyIdRoute = PropertyIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/architecture': typeof ArchitectureRoute
   '/disputes': typeof DisputesRoute
   '/transfer': typeof TransferRoute
   '/verify': typeof VerifyRoute
@@ -57,7 +50,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/architecture': typeof ArchitectureRoute
   '/disputes': typeof DisputesRoute
   '/transfer': typeof TransferRoute
   '/verify': typeof VerifyRoute
@@ -66,7 +58,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/architecture': typeof ArchitectureRoute
   '/disputes': typeof DisputesRoute
   '/transfer': typeof TransferRoute
   '/verify': typeof VerifyRoute
@@ -74,34 +65,14 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/architecture'
-    | '/disputes'
-    | '/transfer'
-    | '/verify'
-    | '/property/$id'
+  fullPaths: '/' | '/disputes' | '/transfer' | '/verify' | '/property/$id'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/architecture'
-    | '/disputes'
-    | '/transfer'
-    | '/verify'
-    | '/property/$id'
-  id:
-    | '__root__'
-    | '/'
-    | '/architecture'
-    | '/disputes'
-    | '/transfer'
-    | '/verify'
-    | '/property/$id'
+  to: '/' | '/disputes' | '/transfer' | '/verify' | '/property/$id'
+  id: '__root__' | '/' | '/disputes' | '/transfer' | '/verify' | '/property/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ArchitectureRoute: typeof ArchitectureRoute
   DisputesRoute: typeof DisputesRoute
   TransferRoute: typeof TransferRoute
   VerifyRoute: typeof VerifyRoute
@@ -115,13 +86,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/architecture': {
-      id: '/architecture'
-      path: '/architecture'
-      fullPath: '/architecture'
-      preLoaderRoute: typeof ArchitectureRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/disputes': {
@@ -157,7 +121,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ArchitectureRoute: ArchitectureRoute,
   DisputesRoute: DisputesRoute,
   TransferRoute: TransferRoute,
   VerifyRoute: VerifyRoute,

@@ -1,16 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { Landmark, Wallet } from "lucide-react";
-import { DEMO_ACCOUNT, shorten } from "@/lib/landledger";
+import { Landmark } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useState, useEffect } from "react";
 
 const NAV = [
   { to: "/", label: "Dashboard" },
   { to: "/verify", label: "Verify" },
   { to: "/transfer", label: "Transfer" },
   { to: "/disputes", label: "Disputes" },
-  { to: "/architecture", label: "Architecture" },
 ] as const;
 
 export function SiteHeader() {
+  // Prevent React hydration mismatches by tracking mount state
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
@@ -32,9 +36,20 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-mono">
-          <Wallet className="size-3.5 text-primary" />
-          {shorten(DEMO_ACCOUNT)}
+        <div className="ml-auto flex items-center gap-2">
+          {mounted ? (
+            <ConnectButton 
+              chainStatus="icon" 
+              showBalance={false}
+              accountStatus={{
+                smallScreen: "avatar",
+                largeScreen: "full",
+              }}
+            />
+          ) : (
+            // A subtle skeleton to prevent layout shift while mounting
+            <div className="h-[40px] w-[140px] animate-pulse rounded-xl bg-muted" />
+          )}
         </div>
       </div>
       <nav className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2 md:hidden">

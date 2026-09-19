@@ -5,7 +5,7 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node", "mocha"],
 
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
@@ -23,6 +23,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noUncheckedSideEffectImports": true,
+    
     "paths": {
       "@/*": ["./src/*"]
     }

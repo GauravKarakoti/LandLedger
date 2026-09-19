@@ -1,5 +1,35 @@
+# Dependencies
+node_modules/
+
+# TanStack Start / Vite / Nitro Build Outputs
+dist/
+dist-ssr/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+bundle/
+
+# Hardhat / Smart Contract Artifacts
+artifacts/
+cache/
+types/
+coverage/
+.gas-snapshot
+snapshots/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+*.local
+.dev.vars
+
+# Cloudflare / Wrangler
+.wrangler/
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,24 +37,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
-
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
-# Editor directories and files
+# System & Editor
+.DS_Store
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
