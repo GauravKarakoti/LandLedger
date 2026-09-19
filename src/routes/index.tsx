@@ -76,7 +76,7 @@ function Dashboard() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild variant="secondary">
-            <Link to="/transfer">Transfer Deed</Link>
+            <Link to="/transfers">Transfer Deed</Link>
           </Button>
           <Button asChild variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10">
             <Link to="/verify">Verify a property</Link>

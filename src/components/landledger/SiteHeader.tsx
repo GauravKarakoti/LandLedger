@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 const NAV = [
   { to: "/", label: "Dashboard" },
   { to: "/verify", label: "Verify" },
-  { to: "/transfer", label: "Transfer" },
+  { to: "/transfers", label: "Transfer" },
   { to: "/disputes", label: "Disputes" },
 ] as const;
 
