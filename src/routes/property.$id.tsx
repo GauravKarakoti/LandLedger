@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, MapPin, Ruler, Wallet, ArrowRightLeft, Loader2 } from "lucide-react";
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+// 1. Import useAccount from wagmi
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from "wagmi";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { LANDLEDGER_ABI, LANDLEDGER_CONTRACT } from "@/lib/web3";
@@ -41,8 +42,13 @@ function PropertyDetail() {
   const { property, events, transfers, disputes } = Route.useLoaderData();
   const [recipient, setRecipient] = useState("");
 
+  // 2. Fetch the connected wallet address
+  const { address, isConnected } = useAccount();
   const { data: hash, writeContract, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  // 3. Safely verify ownership (ignoring case sensitivity)
+  const isOwner = isConnected && address?.toLowerCase() === property.currentOwner.toLowerCase();
 
   const handleTransfer = () => {
     if (!recipient.startsWith("0x") || recipient.length !== 42) {
@@ -96,26 +102,32 @@ function PropertyDetail() {
               <span className="font-mono text-xs">{property.currentOwner}</span>
             </p>
           </div>
-          <div className="col-span-full flex flex-col sm:flex-row items-center gap-4 mt-4 p-4 border rounded-lg bg-muted/30">
-            <Input 
-              placeholder="Recipient Address (0x...)" 
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              className="flex-1 font-mono text-xs"
-            />
-            <Button 
-              onClick={handleTransfer} 
-              disabled={isPending || isConfirming || !recipient}
-              className="gap-2 whitespace-nowrap"
-            >
-              {isPending || isConfirming ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />}
-              {isPending ? "Confirming in Wallet..." : isConfirming ? "Mining..." : "Transfer Deed"}
-            </Button>
-          </div>
-          {isSuccess && (
-            <p className="text-sm text-green-600 col-span-full font-medium">
-              Transfer successful! Tx: {hash?.slice(0, 10)}... Indexer will update shortly.
-            </p>
+          
+          {/* 4. Render the transfer controls ONLY if the user is the owner */}
+          {isOwner && (
+            <>
+              <div className="col-span-full flex flex-col sm:flex-row items-center gap-4 mt-4 p-4 border rounded-lg bg-muted/30">
+                <Input 
+                  placeholder="Recipient Address (0x...)" 
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  className="flex-1 font-mono text-xs"
+                />
+                <Button 
+                  onClick={handleTransfer} 
+                  disabled={isPending || isConfirming || !recipient}
+                  className="gap-2 whitespace-nowrap"
+                >
+                  {isPending || isConfirming ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />}
+                  {isPending ? "Confirming in Wallet..." : isConfirming ? "Mining..." : "Transfer Deed"}
+                </Button>
+              </div>
+              {isSuccess && (
+                <p className="text-sm text-green-600 col-span-full font-medium">
+                  Transfer successful! Tx: {hash?.slice(0, 10)}... Indexer will update shortly.
+                </p>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -137,7 +149,7 @@ function PropertyDetail() {
           <CardContent className="space-y-4 text-sm">
             {transfers.map((t: any) => (
               <div key={t.id} className="flex items-center justify-between gap-3">
-                <span className="font-mono text-xs">{t.id}</span>
+                <span className="font-mono text-xs">{t.transactionHash}</span>
                 <StatusBadge status={t.status as any} />
               </div>
             ))}
@@ -146,7 +158,7 @@ function PropertyDetail() {
             {disputes.map((d: any) => (
               <div key={d.id} className="space-y-1">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-xs">{d.id}</span>
+                  <span className="font-mono text-xs">{d.transaction_hash}</span>
                   <StatusBadge status={d.status as any} />
                 </div>
                 <p className="text-muted-foreground">{d.reason}</p>

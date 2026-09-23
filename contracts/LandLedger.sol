@@ -31,9 +31,9 @@ contract LandLedger {
     mapping(string => uint256[]) public propertyDisputes;
 
     event PropertyRegistered(string propertyId, address indexed owner, string legalIdentifier, string metadataUri);
-    event PropertyTransferred(string indexed propertyId, address indexed previousOwner, address indexed newOwner);
-    event DisputeRaised(uint256 indexed disputeId, string indexed propertyId, address indexed claimant, string reason);
-    event DisputeResolved(uint256 indexed disputeId, string indexed propertyId, DisputeStatus status);
+    event PropertyTransferred(string propertyId, address indexed previousOwner, address indexed newOwner);
+    event DisputeRaised(uint256 indexed disputeId, string propertyId, address indexed claimant, string reason);
+    event DisputeResolved(uint256 indexed disputeId, string propertyId, DisputeStatus status);
 
     modifier onlyAuthority() {
         require(msg.sender == registryAuthority, "Unauthorized: Only registry authority permitted");

@@ -138,12 +138,12 @@ function Dashboard() {
               <div key={t.id} className="rounded-lg border border-border p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-mono text-sm">{t.propertyId}</p>
-                  <StatusBadge status={t.status as any} />
+                  <StatusBadge status={(t.status || "COMPLETED") as any} />
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground font-mono">
-                  <span>{shorten(t.previousOwner)}</span>
+                  <span>{shorten(t.previousOwner || "")}</span>
                   <span className="text-foreground">→</span>
-                  <span>{shorten(t.newOwner)}</span>
+                  <span>{shorten(t.newOwner || "")}</span>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
                   Tx: {shorten(t.transactionHash)}

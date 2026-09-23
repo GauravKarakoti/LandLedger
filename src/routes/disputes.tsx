@@ -38,14 +38,14 @@ function DisputesPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!isConnected) return toast.error("Connect your wallet first");
-    if (!propertyId) return toast.error("Select the parcel in question");
+    if (!propertyId) return toast.error("Select the property in question");
     if (reason.trim().length < 15) return toast.error("Describe the claim in at least 15 characters");
 
     writeContract(
       {
         address: LANDLEDGER_CONTRACT,
         abi: LANDLEDGER_ABI,
-        functionName: "flagDispute",
+        functionName: "raiseDispute", // 👈 Changed from "flagDispute"
         args: [propertyId, reason.trim()],
       },
       {

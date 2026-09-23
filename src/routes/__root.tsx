@@ -16,6 +16,7 @@ import rainbowCss from "@rainbow-me/rainbowkit/styles.css?url";
 import { web3Config } from "../lib/web3";
 import { reportError } from "../lib/error-reporting";
 import { SiteHeader } from "@/components/landledger/SiteHeader";
+import { Toaster } from "sonner";
 
 function NotFoundComponent() {
   return (
@@ -138,6 +139,7 @@ function RootComponent() {
             <SiteHeader />
             <main className="flex-1">
               <Outlet />
+              <Toaster position="bottom-right" richColors />
             </main>
           </div>
         </RainbowKitProvider>

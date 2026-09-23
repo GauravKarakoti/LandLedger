@@ -18,9 +18,9 @@ export function StatusBadge({
   status: PropertyStatus | TransferStatus | DisputeStatus;
 }) {
   const tone =
-    status === "DISPUTED" || status === "OPEN"
+    status === "InDispute" || status === "Active"
       ? "border-destructive/30 bg-destructive/10 text-destructive"
-      : status === "PENDING_TRANSFER" || status === "INITIATED"
+      : status === "Pending" || status === "INITIATED"
         ? "border-warning/40 bg-warning/15 text-warning"
         : "border-success/30 bg-success/12 text-success";
 

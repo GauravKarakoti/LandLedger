@@ -26,11 +26,12 @@ export const transfers = pgTable("transfers", {
 });
 
 export const disputes = pgTable("disputes", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  // 👇 Changed from uuid to integer to perfectly match the on-chain disputeId
+  id: integer("id").primaryKey(), 
   propertyId: varchar("property_id", { length: 255 }).notNull().references(() => properties.id),
   claimant: varchar("claimant", { length: 42 }).notNull(),
   reason: text("reason").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Resolved, Dismissed
+  status: varchar("status", { length: 50 }).notNull().default("Pending"), 
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

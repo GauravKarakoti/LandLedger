@@ -1,11 +1,10 @@
-import { AlertTriangle, ArrowRightLeft, CheckCircle2, FilePlus2, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, FilePlus2, ShieldCheck, Circle } from "lucide-react";
 import { formatDate, shorten, type LedgerEvent } from "@/lib/landledger";
 
 const ICONS = {
   PropertyRegistered: FilePlus2,
-  TransferInitiated: ArrowRightLeft,
-  TransferCompleted: CheckCircle2,
-  DisputeFlagged: AlertTriangle,
+  PropertyTransferred: ArrowRightLeft, // 👈 Updated to match indexer
+  DisputeRaised: AlertTriangle,        // 👈 Updated to match indexer
   DisputeResolved: ShieldCheck,
 } as const;
 
@@ -17,7 +16,9 @@ export function HistoryTimeline({ events }: { events: LedgerEvent[] }) {
   return (
     <ol className="relative space-y-6 border-l border-border pl-6">
       {events.map((event) => {
-        const Icon = ICONS[event.type];
+        // 👈 Safely fallback to a generic Circle icon if the event type is completely new
+        const Icon = ICONS[event.type as keyof typeof ICONS] || Circle; 
+        
         return (
           <li key={event.id} className="relative">
             <span className="absolute -left-[33px] flex size-6 items-center justify-center rounded-full border border-border bg-card">
