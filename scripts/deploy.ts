@@ -15,9 +15,9 @@ async function main() {
   const { artifacts } = hre;
 
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying LandLedger with account:", deployer.address);
+  console.log("Deploying LandLedger with account:", deployer!.address);
   
-  const balance = await ethers.provider.getBalance(deployer.address);
+  const balance = await ethers.provider.getBalance(deployer!.address);
   console.log("Account balance:", ethers.formatEther(balance), "ETH");
 
   // Deploy the contract

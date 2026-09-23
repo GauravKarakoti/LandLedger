@@ -1,5 +1,13 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "eslint.config.js"],
+  "include": [
+    "src/**/*.ts", 
+    "src/**/*.tsx", 
+    "test/**/*.ts", 
+    "scripts/**/*.ts", 
+    "hardhat.config.ts",
+    "vite.config.ts", 
+    "eslint.config.js"
+, "test/LandLedger.test.ts", "scripts/deploy.ts"  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",

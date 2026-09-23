@@ -30,7 +30,7 @@ contract LandLedger {
     mapping(uint256 => Dispute) public disputes;
     mapping(string => uint256[]) public propertyDisputes;
 
-    event PropertyRegistered(string indexed propertyId, address indexed owner, string legalIdentifier, string metadataUri);
+    event PropertyRegistered(string propertyId, address indexed owner, string legalIdentifier, string metadataUri);
     event PropertyTransferred(string indexed propertyId, address indexed previousOwner, address indexed newOwner);
     event DisputeRaised(uint256 indexed disputeId, string indexed propertyId, address indexed claimant, string reason);
     event DisputeResolved(uint256 indexed disputeId, string indexed propertyId, DisputeStatus status);

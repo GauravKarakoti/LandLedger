@@ -1,26 +1,19 @@
-import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
-import hardhatEthersPlugin from "@nomicfoundation/hardhat-ethers";
-import { configVariable, defineConfig } from "hardhat/config";
+import { defineConfig } from "hardhat/config";
 import "dotenv/config";
 
+// 1. Import the plugin object
+import hardhatMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+
 export default defineConfig({
-  plugins: [
-    hardhatToolboxMochaEthersPlugin,
-    hardhatEthersPlugin
-  ],
+  // 2. Explicitly register it so Hardhat knows how to execute Mocha and .ts files
+  plugins: [hardhatMochaEthers],
+  
   solidity: {
-    profiles: {
-      default: {
-        version: "0.8.20",
-      },
-      production: {
-        version: "0.8.20",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
       },
     },
   },
@@ -28,8 +21,8 @@ export default defineConfig({
     baseSepolia: {
       type: "http",
       chainType: "op",
-      url: configVariable("BASE_SEPOLIA_RPC_URL"),
-      accounts: [configVariable("PRIVATE_KEY")],
+      url: process.env["BASE_SEPOLIA_RPC_URL"] || "",
+      accounts: process.env["PRIVATE_KEY"] ? [process.env["PRIVATE_KEY"]] : [],
     },
   },
 });

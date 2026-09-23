@@ -8,6 +8,7 @@ const NAV = [
   { to: "/verify", label: "Verify" },
   { to: "/transfers", label: "Transfer" },
   { to: "/disputes", label: "Disputes" },
+  { to: "/register", label: "Admin" },
 ] as const;
 
 export function SiteHeader() {

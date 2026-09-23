@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DisputesRouteImport } from './routes/disputes'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const DisputesRoute = DisputesRouteImport.update({
   id: '/disputes',
   path: '/disputes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TransfersRoute = TransfersRouteImport.update({
@@ -44,6 +50,7 @@ const PropertyIdRoute = PropertyIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/disputes': typeof DisputesRoute
+  '/register': typeof RegisterRoute
   '/transfers': typeof TransfersRoute
   '/verify': typeof VerifyRoute
   '/property/$id': typeof PropertyIdRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/disputes': typeof DisputesRoute
+  '/register': typeof RegisterRoute
   '/transfers': typeof TransfersRoute
   '/verify': typeof VerifyRoute
   '/property/$id': typeof PropertyIdRoute
@@ -59,22 +67,32 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/disputes': typeof DisputesRoute
+  '/register': typeof RegisterRoute
   '/transfers': typeof TransfersRoute
   '/verify': typeof VerifyRoute
   '/property/$id': typeof PropertyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/disputes' | '/transfers' | '/verify' | '/property/$id'
+  fullPaths:
+    '/' | '/disputes' | '/register' | '/transfers' | '/verify' | '/property/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/disputes' | '/transfers' | '/verify' | '/property/$id'
+  to:
+    '/' | '/disputes' | '/register' | '/transfers' | '/verify' | '/property/$id'
   id:
-    '__root__' | '/' | '/disputes' | '/transfers' | '/verify' | '/property/$id'
+    | '__root__'
+    | '/'
+    | '/disputes'
+    | '/register'
+    | '/transfers'
+    | '/verify'
+    | '/property/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DisputesRoute: typeof DisputesRoute
+  RegisterRoute: typeof RegisterRoute
   TransfersRoute: typeof TransfersRoute
   VerifyRoute: typeof VerifyRoute
   PropertyIdRoute: typeof PropertyIdRoute
@@ -94,6 +112,13 @@ declare module '@tanstack/react-router' {
       path: '/disputes'
       fullPath: '/disputes'
       preLoaderRoute: typeof DisputesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transfers': {
@@ -123,6 +148,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DisputesRoute: DisputesRoute,
+  RegisterRoute: RegisterRoute,
   TransfersRoute: TransfersRoute,
   VerifyRoute: VerifyRoute,
   PropertyIdRoute: PropertyIdRoute,

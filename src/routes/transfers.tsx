@@ -63,6 +63,8 @@ function TransferPage() {
     if (!isAddress(toAddress.trim())) return toast.error("Enter a valid EVM buyer wallet address (0x…)");
     if (toAddress.trim().toLowerCase() === address?.toLowerCase()) return toast.error("Cannot transfer to yourself");
 
+    console.log(`Initiating transfer of ${propertyId} to ${toAddress.trim()}`);
+
     writeContract(
       {
         address: LANDLEDGER_CONTRACT,
@@ -71,7 +73,20 @@ function TransferPage() {
         args: [propertyId, toAddress.trim() as `0x${string}`],
       },
       {
-        onError: (err) => toast.error(err.message.split("\n")[0] || "Transfer failed"),
+        onSuccess: (txHash) => {
+          console.log("Transfer tx submitted:", txHash);
+          toast.info("Transaction sent to wallet...");
+        },
+        onError: (err: any) => {
+          console.error("Full Transfer Error Object:", err);
+          
+          // Catch the specific gas limit estimation failure
+          if (err.message.includes("gas limit") || err.message.includes("exceeds max transaction")) {
+            toast.error("Transaction Reverted: You don't own this property on-chain, or it doesn't exist.");
+          } else {
+            toast.error(err.shortMessage || err.message.split("\n")[0] || "Transfer failed");
+          }
+        },
       }
     );
   }
@@ -114,7 +129,7 @@ function TransferPage() {
                   <SelectContent>
                     {transferable.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.id} — {p.legalIdentifier}
+                        {p.id} - {p.legalIdentifier}
                       </SelectItem>
                     ))}
                   </SelectContent>
