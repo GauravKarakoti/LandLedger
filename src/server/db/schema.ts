@@ -1,48 +1,87 @@
-import { pgTable, text, varchar, integer, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const properties = pgTable("properties", {
-  id: varchar("id", { length: 255 }).primaryKey(), // Matches the on-chain propertyId (e.g., PROP-DL-2024-001)
-  currentOwner: varchar("current_owner", { length: 42 }).notNull(), // EVM Address (lowercase)
-  legalIdentifier: varchar("legal_identifier", { length: 255 }).notNull(),
-  location: text("location").notNull(),
-  areaSqm: integer("area_sqm").notNull(),
-  valuationInr: integer("valuation_inr").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("Active"), // Active, InDispute, Transferred, Frozen
-  ownerName: varchar("owner_name", { length: 255 }).notNull(),
-  registeredDate: timestamp("registered_date").notNull().defaultNow(),
-  metadataUri: text("metadata_uri"), // IPFS link to physical documents
-});
+export const properties = pgTable(
+  "properties",
+  {
+    id: varchar("id", { length: 255 }).primaryKey(), // Matches the on-chain propertyId (e.g., PROP-DL-2024-001)
+    currentOwner: varchar("current_owner", { length: 42 }).notNull(), // EVM Address (lowercase)
+    legalIdentifier: varchar("legal_identifier", { length: 255 }).notNull(),
+    location: text("location").notNull(),
+    areaSqm: integer("area_sqm").notNull(),
+    valuationInr: integer("valuation_inr").notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("Active"), // Active, InDispute, Transferred, Frozen
+    ownerName: varchar("owner_name", { length: 255 }).notNull(),
+    registeredDate: timestamp("registered_date").notNull().defaultNow(),
+    metadataUri: text("metadata_uri"), // IPFS link or JSON metadata
+  },
+  (table) => [
+    index("properties_owner_idx").on(table.currentOwner),
+    index("properties_status_idx").on(table.status),
+    uniqueIndex("properties_legal_id_idx").on(table.legalIdentifier),
+  ]
+);
 
-export const transfers = pgTable("transfers", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  propertyId: varchar("property_id", { length: 255 }).notNull().references(() => properties.id),
-  previousOwner: varchar("previous_owner", { length: 42 }).notNull(),
-  newOwner: varchar("new_owner", { length: 42 }).notNull(),
-  considerationInr: integer("consideration_inr"), // Optional: if sale amount is recorded off-chain
-  status: varchar("status", { length: 50 }).notNull().default("COMPLETED"),
-  transactionHash: varchar("transaction_hash", { length: 66 }).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const transfers = pgTable(
+  "transfers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: varchar("property_id", { length: 255 })
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    previousOwner: varchar("previous_owner", { length: 42 }).notNull(),
+    newOwner: varchar("new_owner", { length: 42 }).notNull(),
+    considerationInr: integer("consideration_inr"), // Optional: if sale amount is recorded off-chain
+    status: varchar("status", { length: 50 }).notNull().default("COMPLETED"),
+    transactionHash: varchar("transaction_hash", { length: 66 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("transfers_property_id_idx").on(table.propertyId),
+    index("transfers_new_owner_idx").on(table.newOwner),
+    index("transfers_tx_hash_idx").on(table.transactionHash),
+  ]
+);
 
-export const disputes = pgTable("disputes", {
-  // 👇 Changed from uuid to integer to perfectly match the on-chain disputeId
-  id: integer("id").primaryKey(), 
-  propertyId: varchar("property_id", { length: 255 }).notNull().references(() => properties.id),
-  claimant: varchar("claimant", { length: 42 }).notNull(),
-  reason: text("reason").notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("Pending"), 
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const disputes = pgTable(
+  "disputes",
+  {
+    // Matches the on-chain uint256 disputeId
+    id: integer("id").primaryKey(),
+    propertyId: varchar("property_id", { length: 255 })
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    claimant: varchar("claimant", { length: 42 }).notNull(),
+    reason: text("reason").notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("Pending"), // Pending, Resolved, Dismissed
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    index("disputes_property_id_idx").on(table.propertyId),
+    index("disputes_status_idx").on(table.status),
+    index("disputes_claimant_idx").on(table.claimant),
+  ]
+);
 
-export const events = pgTable("events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  propertyId: varchar("property_id", { length: 255 }).notNull().references(() => properties.id),
-  type: varchar("type", { length: 100 }).notNull(), // e.g., "MINT", "TRANSFER", "DISPUTE_RAISED"
-  description: text("description").notNull(),
-  transactionHash: varchar("transaction_hash", { length: 66 }),
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
-});
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: varchar("property_id", { length: 255 })
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    type: varchar("type", { length: 100 }).notNull(), // PropertyRegistered, PropertyTransferred, DisputeRaised, DisputeResolved
+    description: text("description").notNull(),
+    transactionHash: varchar("transaction_hash", { length: 66 }),
+    timestamp: timestamp("timestamp").notNull().defaultNow(),
+  },
+  (table) => [
+    index("events_property_id_idx").on(table.propertyId),
+    index("events_type_idx").on(table.type),
+    index("events_timestamp_idx").on(table.timestamp),
+  ]
+);
 
 // Define relations for optimized TanStack Start querying
 export const propertiesRelations = relations(properties, ({ many }) => ({

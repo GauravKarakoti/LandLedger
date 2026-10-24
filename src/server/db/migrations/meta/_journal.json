@@ -22,6 +22,13 @@
       "when": 1790170042277,
       "tag": "0002_breezy_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792854738654,
+      "tag": "0003_cynical_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

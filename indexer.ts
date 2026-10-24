@@ -1,14 +1,14 @@
 import { createPublicClient, http, parseAbiItem } from "viem";
 import { baseSepolia } from "viem/chains";
 import { db } from "./src/server/db";
-// 1. Import the transfers and disputes tables from your schema
 import { properties, events, transfers, disputes } from "./src/server/db/schema";
 import { LANDLEDGER_CONTRACT } from "./src/lib/web3";
-import { eq } from "drizzle-orm"; 
+import { and, eq } from "drizzle-orm";
 
 const client = createPublicClient({
   chain: baseSepolia,
   transport: http(process.env.BASE_SEPOLIA_RPC_URL),
+  pollingInterval: 4_000,
 });
 
 const propertyRegisteredEvent = parseAbiItem(
@@ -19,6 +19,10 @@ const propertyTransferredEvent = parseAbiItem(
   "event PropertyTransferred(string propertyId, address indexed previousOwner, address indexed newOwner)"
 );
 
+const transferInitiatedEvent = parseAbiItem(
+  "event TransferInitiated(uint256 indexed transferId, string propertyId, address indexed seller, address indexed buyer)"
+);
+
 const disputeRaisedEvent = parseAbiItem(
   "event DisputeRaised(uint256 indexed disputeId, string propertyId, address indexed claimant, string reason)"
 );
@@ -27,11 +31,34 @@ const disputeResolvedEvent = parseAbiItem(
   "event DisputeResolved(uint256 indexed disputeId, string propertyId, uint8 status)"
 );
 
-console.log("Indexer started. Listening for LandLedger events...");
+const metadataUpdatedEvent = parseAbiItem(
+  "event MetadataUpdated(string propertyId, string newMetadataUri, address indexed updatedBy)"
+);
 
-// --- REGISTRATION LISTENER ---
+function parseMetadataSafely(metadataUri: string) {
+  try {
+    const parsed = JSON.parse(metadataUri);
+    return {
+      location: parsed.location || "Unknown Location",
+      areaSqm: Number(parsed.areaSqm ?? parsed.area ?? 0),
+      valuationInr: Number(parsed.valuationInr ?? parsed.valuation ?? 0),
+      ownerName: parsed.ownerName || "Verified Title Holder",
+    };
+  } catch {
+    return {
+      location: metadataUri.startsWith("ipfs://") ? `IPFS Record (${metadataUri.slice(0, 16)}...)` : "On-Chain Parcel",
+      areaSqm: 100,
+      valuationInr: 0,
+      ownerName: "Verified Title Holder",
+    };
+  }
+}
+
+console.log(`[Indexer] Started listening for LandLedger events on ${LANDLEDGER_CONTRACT}...`);
+
+// --- 1. REGISTRATION LISTENER ---
 client.watchEvent({
-  address: LANDLEDGER_CONTRACT as `0x${string}`,
+  address: LANDLEDGER_CONTRACT,
   event: propertyRegisteredEvent,
   onLogs: async (logs) => {
     for (const log of logs) {
@@ -39,39 +66,70 @@ client.watchEvent({
         const { propertyId, owner, legalIdentifier, metadataUri } = log.args;
         if (!propertyId || !owner || !metadataUri) continue;
 
-        const metadata = JSON.parse(metadataUri);
-        console.log(`New property registered on-chain: ${propertyId}. Saving to database...`);
+        const metadata = parseMetadataSafely(metadataUri);
+        console.log(`[Indexer] PropertyRegistered: ${propertyId} -> ${owner}`);
 
-        await db.insert(properties).values({
-          id: propertyId,
-          currentOwner: owner.toLowerCase(),
-          legalIdentifier: legalIdentifier!,
-          location: metadata.location,
-          areaSqm: metadata.areaSqm,
-          valuationInr: metadata.valuationInr,
-          status: "Active",
-          ownerName: metadata.ownerName || "Unknown", 
-          metadataUri: metadataUri 
-        });
+        await db
+          .insert(properties)
+          .values({
+            id: propertyId,
+            currentOwner: owner.toLowerCase(),
+            legalIdentifier: legalIdentifier ?? propertyId,
+            location: metadata.location,
+            areaSqm: metadata.areaSqm,
+            valuationInr: metadata.valuationInr,
+            status: "Active",
+            ownerName: metadata.ownerName,
+            metadataUri,
+          })
+          .onConflictDoUpdate({
+            target: properties.id,
+            set: {
+              currentOwner: owner.toLowerCase(),
+              metadataUri,
+              status: "Active",
+            },
+          });
 
         await db.insert(events).values({
-          propertyId: propertyId,
+          propertyId,
           type: "PropertyRegistered",
           description: `Registered to ${owner}`,
           transactionHash: log.transactionHash,
         });
-
-        console.log(`Successfully indexed ${propertyId}!`);
       } catch (err) {
-        console.error("Failed to index event:", err);
+        console.error("[Indexer] Failed to index PropertyRegistered:", err);
       }
     }
   },
 });
 
-// --- TRANSFER LISTENER ---
+// --- 2. TRANSFER INITIATED (MULTI-SIG) LISTENER ---
 client.watchEvent({
-  address: LANDLEDGER_CONTRACT as `0x${string}`,
+  address: LANDLEDGER_CONTRACT,
+  event: transferInitiatedEvent,
+  onLogs: async (logs) => {
+    for (const log of logs) {
+      try {
+        const { transferId, propertyId, seller, buyer } = log.args;
+        if (!propertyId || !seller || !buyer) continue;
+
+        await db.insert(events).values({
+          propertyId,
+          type: "TransferInitiated",
+          description: `Multi-sig transfer #${transferId} initiated from ${seller} to ${buyer}`,
+          transactionHash: log.transactionHash,
+        });
+      } catch (err) {
+        console.error("[Indexer] Failed to index TransferInitiated:", err);
+      }
+    }
+  },
+});
+
+// --- 3. TRANSFER COMPLETED LISTENER ---
+client.watchEvent({
+  address: LANDLEDGER_CONTRACT,
   event: propertyTransferredEvent,
   onLogs: async (logs) => {
     for (const log of logs) {
@@ -79,110 +137,151 @@ client.watchEvent({
         const { propertyId, previousOwner, newOwner } = log.args;
         if (!propertyId || !previousOwner || !newOwner) continue;
 
-        console.log(`Property ${propertyId} transferred to ${newOwner}. Updating database...`);
+        console.log(`[Indexer] PropertyTransferred: ${propertyId} -> ${newOwner}`);
 
-        await db.update(properties)
-          .set({ currentOwner: newOwner.toLowerCase() })
+        await db
+          .update(properties)
+          .set({ currentOwner: newOwner.toLowerCase(), status: "Active" })
           .where(eq(properties.id, propertyId));
 
         await db.insert(events).values({
-          propertyId: propertyId,
+          propertyId,
           type: "PropertyTransferred",
           description: `Transferred from ${previousOwner} to ${newOwner}`,
           transactionHash: log.transactionHash,
         });
 
-        // 2. Add the transfer to the dedicated transfers table
         await db.insert(transfers).values({
-          propertyId: propertyId,
+          propertyId,
           previousOwner: previousOwner.toLowerCase(),
           newOwner: newOwner.toLowerCase(),
-          transactionHash: log.transactionHash,
+          transactionHash: log.transactionHash ?? "0x",
           status: "COMPLETED",
         });
-
-        console.log(`Successfully indexed transfer for ${propertyId}!`);
       } catch (err) {
-        console.error("Failed to index transfer event:", err);
+        console.error("[Indexer] Failed to index PropertyTransferred:", err);
       }
     }
   },
 });
 
-// --- DISPUTE RAISED LISTENER ---
+// --- 4. DISPUTE RAISED LISTENER ---
 client.watchEvent({
-  address: LANDLEDGER_CONTRACT as `0x${string}`,
+  address: LANDLEDGER_CONTRACT,
   event: disputeRaisedEvent,
   onLogs: async (logs) => {
     for (const log of logs) {
       try {
         const { disputeId, propertyId, claimant, reason } = log.args;
-        if (!propertyId || !claimant) continue;
+        if (!propertyId || !claimant || disputeId === undefined) continue;
 
-        console.log(`Dispute raised on ${propertyId} by ${claimant}. Freezing property...`);
+        console.log(`[Indexer] DisputeRaised #${disputeId} on ${propertyId}`);
 
-        await db.update(properties)
+        await db
+          .update(properties)
           .set({ status: "InDispute" })
           .where(eq(properties.id, propertyId));
 
         await db.insert(events).values({
-          propertyId: propertyId,
+          propertyId,
           type: "DisputeRaised",
           description: `Dispute #${disputeId} raised by ${claimant}: ${reason}`,
           transactionHash: log.transactionHash,
         });
 
-        // 3. Add the dispute to the dedicated disputes table
-        // (We cast disputeId to Number because Viem returns it as a BigInt)
-        await db.insert(disputes).values({
-          id: Number(disputeId),
-          propertyId: propertyId,
-          claimant: claimant.toLowerCase(),
-          reason: reason!,
-          status: "Pending",
-        });
-
-        console.log(`Successfully indexed dispute for ${propertyId}!`);
+        await db
+          .insert(disputes)
+          .values({
+            id: Number(disputeId),
+            propertyId,
+            claimant: claimant.toLowerCase(),
+            reason: reason ?? "Unspecified dispute",
+            status: "Pending",
+          })
+          .onConflictDoUpdate({
+            target: disputes.id,
+            set: { status: "Pending", reason: reason ?? "Unspecified dispute" },
+          });
       } catch (err) {
-        console.error("Failed to index dispute raised event:", err);
+        console.error("[Indexer] Failed to index DisputeRaised:", err);
       }
     }
   },
 });
 
-// --- DISPUTE RESOLVED LISTENER ---
+// --- 5. DISPUTE RESOLVED LISTENER ---
 client.watchEvent({
-  address: LANDLEDGER_CONTRACT as `0x${string}`,
+  address: LANDLEDGER_CONTRACT,
   event: disputeResolvedEvent,
   onLogs: async (logs) => {
     for (const log of logs) {
       try {
         const { disputeId, propertyId, status } = log.args;
-        if (!propertyId) continue;
-
-        console.log(`Dispute #${disputeId} resolved for ${propertyId}. Unfreezing property...`);
-
-        await db.update(properties)
-          .set({ status: "Active" })
-          .where(eq(properties.id, propertyId));
+        if (!propertyId || disputeId === undefined) continue;
 
         const resolution = status === 1 ? "Resolved" : "Dismissed";
+        console.log(`[Indexer] DisputeResolved #${disputeId} (${resolution}) for ${propertyId}`);
+
+        await db
+          .update(disputes)
+          .set({ status: resolution, resolvedAt: new Date() })
+          .where(eq(disputes.id, Number(disputeId)));
+
+        // Check if any other disputes remain Pending for this property
+        const remainingPending = await db
+          .select()
+          .from(disputes)
+          .where(and(eq(disputes.propertyId, propertyId), eq(disputes.status, "Pending")));
+
+        if (remainingPending.length === 0) {
+          await db
+            .update(properties)
+            .set({ status: "Active" })
+            .where(eq(properties.id, propertyId));
+        }
 
         await db.insert(events).values({
-          propertyId: propertyId,
+          propertyId,
           type: "DisputeResolved",
           description: `Dispute #${disputeId} was ${resolution}`,
           transactionHash: log.transactionHash,
         });
-
-        // 4. Update the dispute record status in the dedicated disputes table
-        await db.update(disputes)
-          .set({ status: resolution })
-          .where(eq(disputes.id, Number(disputeId)));
-
-        console.log(`Successfully indexed resolution for ${propertyId}!`);
       } catch (err) {
-        console.error("Failed to index dispute resolved event:", err);
+        console.error("[Indexer] Failed to index DisputeResolved:", err);
+      }
+    }
+  },
+});
+
+// --- 6. METADATA UPDATED LISTENER ---
+client.watchEvent({
+  address: LANDLEDGER_CONTRACT,
+  event: metadataUpdatedEvent,
+  onLogs: async (logs) => {
+    for (const log of logs) {
+      try {
+        const { propertyId, newMetadataUri, updatedBy } = log.args;
+        if (!propertyId || !newMetadataUri) continue;
+
+        const metadata = parseMetadataSafely(newMetadataUri);
+        await db
+          .update(properties)
+          .set({
+            metadataUri: newMetadataUri,
+            location: metadata.location,
+            areaSqm: metadata.areaSqm,
+            valuationInr: metadata.valuationInr,
+          })
+          .where(eq(properties.id, propertyId));
+
+        await db.insert(events).values({
+          propertyId,
+          type: "MetadataUpdated",
+          description: `Metadata updated by ${updatedBy}`,
+          transactionHash: log.transactionHash,
+        });
+      } catch (err) {
+        console.error("[Indexer] Failed to index MetadataUpdated:", err);
       }
     }
   },
