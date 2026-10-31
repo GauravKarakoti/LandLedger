@@ -4,6 +4,7 @@ import { db } from "./src/server/db";
 import { properties, events, transfers, disputes } from "./src/server/db/schema";
 import { LANDLEDGER_CONTRACT } from "./src/lib/web3";
 import { and, eq } from "drizzle-orm";
+import server from "node:http";
 
 const client = createPublicClient({
   chain: baseSepolia,
@@ -285,4 +286,12 @@ client.watchEvent({
       }
     }
   },
+});
+
+const PORT = process.env.PORT || 3001;
+server.createServer((_, res) => {
+  res.writeHead(200);
+  res.end("LandLedger Indexer Active");
+}).listen(PORT, () => {
+  console.log(`[Indexer] Health check server listening on port ${PORT}`);
 });
