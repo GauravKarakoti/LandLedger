@@ -254,7 +254,6 @@ client.watchEvent({
   },
 });
 
-// --- 6. METADATA UPDATED LISTENER ---
 client.watchEvent({
   address: LANDLEDGER_CONTRACT,
   event: metadataUpdatedEvent,
@@ -264,11 +263,35 @@ client.watchEvent({
         const { propertyId, newMetadataUri, updatedBy } = log.args;
         if (!propertyId || !newMetadataUri) continue;
 
-        const metadata = parseMetadataSafely(newMetadataUri);
+        const existingRows = await db
+          .select()
+          .from(properties)
+          .where(eq(properties.id, propertyId));
+        const currentProp = existingRows[0];
+
+        let existingJson: Record<string, any> = {};
+        try {
+          existingJson = JSON.parse(currentProp?.metadataUri || "{}");
+        } catch {
+          existingJson = {};
+        }
+
+        let incomingJson: Record<string, any> = {};
+        try {
+          incomingJson = JSON.parse(newMetadataUri);
+        } catch {
+          incomingJson = {};
+        }
+
+        const mergedJson = { ...existingJson, ...incomingJson };
+        const mergedUriString = JSON.stringify(mergedJson);
+        const metadata = parseMetadataSafely(mergedUriString);
+
         await db
           .update(properties)
           .set({
-            metadataUri: newMetadataUri,
+            metadataUri: mergedUriString,
+            ownerName: metadata.ownerName,
             location: metadata.location,
             areaSqm: metadata.areaSqm,
             valuationInr: metadata.valuationInr,

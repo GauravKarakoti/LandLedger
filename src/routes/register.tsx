@@ -41,13 +41,15 @@ function RegisterPropertyPage() {
     ownerAddress: "",
   });
 
-  // Governance form states
+  // Governance form states (all fields except propertyId are optional for partial updates)
   const [metaUpdate, setMetaUpdate] = useState({
     propertyId: "",
+    ownerName: "",
     location: "",
     areaSqm: "",
     valuationInr: "",
   });
+  const [updateDeedHash, setUpdateDeedHash] = useState<string>("");
   const [adjudicatorInput, setAdjudicatorInput] = useState("");
   const [freezePropId, setFreezePropId] = useState("");
 
@@ -80,6 +82,18 @@ function RegisterPropertyPage() {
       const computed = await hashDocumentFile(file);
       setDeedHash(computed);
       toast.success(`Title deed hashed: ${computed.slice(0, 14)}...`);
+    } catch {
+      toast.error("Failed to compute document hash");
+    }
+  }
+
+  async function handleUpdateDeedFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const computed = await hashDocumentFile(file);
+      setUpdateDeedHash(computed);
+      toast.success(`Updated deed hashed: ${computed.slice(0, 14)}...`);
     } catch {
       toast.error("Failed to compute document hash");
     }
@@ -145,23 +159,62 @@ function RegisterPropertyPage() {
 
   async function handleUpdateMetadata(e: React.FormEvent) {
     e.preventDefault();
-    if (!metaUpdate.propertyId.trim()) return toast.error("Enter a property ID");
+    const targetId = metaUpdate.propertyId.trim();
+    if (!targetId) return toast.error("Enter a property ID");
+
+    const hasUpdates = Boolean(
+      metaUpdate.ownerName.trim() ||
+      metaUpdate.location.trim() ||
+      metaUpdate.areaSqm.trim() ||
+      metaUpdate.valuationInr.trim() ||
+      updateDeedHash
+    );
+
+    if (!hasUpdates) {
+      return toast.error("Fill in at least one field or attach a deed PDF to update");
+    }
 
     setIsSubmitting(true);
     try {
-      const { contract } = await getWeb3Signer();
-      const newMeta = JSON.stringify({
-        location: metaUpdate.location.trim(),
-        areaSqm: Number(metaUpdate.areaSqm),
-        valuationInr: Number(metaUpdate.valuationInr),
-        updatedAt: new Date().toISOString(),
-      });
+      // 1. Read existing on-chain metadata so unprovided fields are preserved
+      const { contract: readContract } = getReadOnlyContract();
+      const onChainProp = await readContract["properties"]!(targetId);
+      const zeroAddr = "0x0000000000000000000000000000000000000000";
 
-      const tx = await contract["updatePropertyMetadata"]!(metaUpdate.propertyId.trim(), newMeta);
+      if (!onChainProp || onChainProp.currentOwner === zeroAddr) {
+        toast.error(`Parcel ${targetId} does not exist on-chain`);
+        return;
+      }
+
+      let existingMeta: Record<string, any> = {};
+      try {
+        existingMeta = JSON.parse(onChainProp.metadataUri || "{}");
+      } catch {
+        existingMeta = {};
+      }
+
+      // 2. Merge only the fields that were actually provided
+      const mergedMeta = {
+        ...existingMeta,
+        ownerName: metaUpdate.ownerName.trim() || existingMeta["ownerName"] || "Verified Title Holder",
+        location: metaUpdate.location.trim() || existingMeta["location"] || "Unknown Location",
+        areaSqm: metaUpdate.areaSqm.trim()
+          ? Number(metaUpdate.areaSqm)
+          : Number(existingMeta["areaSqm"] ?? existingMeta["area"] ?? 0),
+        valuationInr: metaUpdate.valuationInr.trim()
+          ? Number(metaUpdate.valuationInr)
+          : Number(existingMeta["valuationInr"] ?? existingMeta["valuation"] ?? 0),
+        documentHash: updateDeedHash || existingMeta["documentHash"] || undefined,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const { contract } = await getWeb3Signer();
+      const tx = await contract["updatePropertyMetadata"]!(targetId, JSON.stringify(mergedMeta));
       toast.info("Updating metadata on-chain...");
       await tx.wait();
-      toast.success(`Metadata updated for ${metaUpdate.propertyId}`);
-      setMetaUpdate({ propertyId: "", location: "", areaSqm: "", valuationInr: "" });
+      toast.success(`Metadata updated for ${targetId}`);
+      setMetaUpdate({ propertyId: "", ownerName: "", location: "", areaSqm: "", valuationInr: "" });
+      setUpdateDeedHash("");
       await router.invalidate();
     } catch (err: any) {
       toast.error(err.reason || err.shortMessage || "Metadata update failed");
@@ -403,53 +456,80 @@ function RegisterPropertyPage() {
             <CardHeader>
               <CardTitle className="text-base">Update Parcel Metadata</CardTitle>
               <CardDescription>
-                Update survey boundaries, valuation, or physical record URI for an existing property.
+                Leave any field blank to keep its current on-chain value (existing deed hashes and owner names are automatically preserved).
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleUpdateMetadata} className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Property ID</Label>
+                  <Label>Property ID *</Label>
                   <Input
                     required
                     placeholder="PROP-001"
                     className="font-mono"
                     value={metaUpdate.propertyId}
                     onChange={(e) => setMetaUpdate({ ...metaUpdate, propertyId: e.target.value })}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Updated Location</Label>
+                  <Label>Updated Owner Name (Optional)</Label>
                   <Input
-                    required
-                    placeholder="New survey description"
+                    placeholder="Keep current if blank"
+                    value={metaUpdate.ownerName}
+                    onChange={(e) => setMetaUpdate({ ...metaUpdate, ownerName: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Updated Location (Optional)</Label>
+                  <Input
+                    placeholder="Keep current if blank"
                     value={metaUpdate.location}
                     onChange={(e) => setMetaUpdate({ ...metaUpdate, location: e.target.value })}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Updated Area (sqm)</Label>
+                  <Label>Updated Area in sqm (Optional)</Label>
                   <Input
-                    required
                     type="number"
                     min="1"
+                    placeholder="Keep current if blank"
                     value={metaUpdate.areaSqm}
                     onChange={(e) => setMetaUpdate({ ...metaUpdate, areaSqm: e.target.value })}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Updated Valuation (INR)</Label>
+                  <Label>Updated Valuation in INR (Optional)</Label>
                   <Input
-                    required
                     type="number"
                     min="1"
+                    placeholder="Keep current if blank"
                     value={metaUpdate.valuationInr}
                     onChange={(e) => setMetaUpdate({ ...metaUpdate, valuationInr: e.target.value })}
+                    disabled={isSubmitting}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Attach / Replace Title Deed PDF (Optional)</Label>
+                  <Input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.json"
+                    onChange={handleUpdateDeedFileChange}
+                    disabled={isSubmitting}
+                  />
+                  {updateDeedHash && (
+                    <p className="flex items-center gap-1.5 font-mono text-xs text-emerald-600">
+                      <FileCheck2 className="size-3.5" /> New Hash: {updateDeedHash.slice(0, 18)}...
+                    </p>
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <Button type="submit" variant="outline" disabled={isSubmitting || !isConnected}>
-                    <RefreshCw className="mr-2 size-4" /> Update On-Chain Metadata
+                    {isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
+                    Update On-Chain Metadata
                   </Button>
                 </div>
               </form>
