@@ -15,7 +15,9 @@
     "test": "npx hardhat test",
     "db:gen": "drizzle-kit generate ",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "bench": "bun run scripts/benchmark.ts --env=baseSepolia --warmup=2 --runs=30",
+    "bench:quick": "bun run scripts/benchmark.ts --env=baseSepolia --warmup=2 --runs=9"
   },
   "overrides": {
     "rolldown": "1.2.1"

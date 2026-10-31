@@ -1,0 +1,49 @@
+category,metric,sample_window,count,median,iqr,q25,q75,mean,min,max
+registerProperty,wall_duration_ms,First_9 (GREP),9,922.126,148.408,803.03,951.438,981.1241,698.004,1718.356
+registerProperty,gas_used,First_9 (GREP),9,398435,0,398435,398435,398440.3333,398435,398459
+registerProperty,gas_price_gwei,First_9 (GREP),9,0.006,0,0.006,0.006,0.006,0.006,0.006
+registerProperty,tx_cost_eth,First_9 (GREP),9,0,0,0,0,0,0,0
+registerProperty,wall_duration_ms,Full_9,9,922.126,148.408,803.03,951.438,981.1241,698.004,1718.356
+registerProperty,gas_used,Full_9,9,398435,0,398435,398435,398440.3333,398435,398459
+registerProperty,gas_price_gwei,Full_9,9,0.006,0,0.006,0.006,0.006,0.006,0.006
+registerProperty,tx_cost_eth,Full_9,9,0,0,0,0,0,0,0
+raiseDispute,wall_duration_ms,First_9 (GREP),9,921.593,7.672,917.179,924.851,1013.4838,837.444,1718.307
+raiseDispute,gas_used,First_9 (GREP),9,267991,0,267991,267991,267993.6667,267991,268003
+raiseDispute,gas_price_gwei,First_9 (GREP),9,0.006,0,0.006,0.006,0.006,0.006,0.006
+raiseDispute,tx_cost_eth,First_9 (GREP),9,0,0,0,0,0,0,0
+raiseDispute,wall_duration_ms,Full_9,9,921.593,7.672,917.179,924.851,1013.4838,837.444,1718.307
+raiseDispute,gas_used,Full_9,9,267991,0,267991,267991,267993.6667,267991,268003
+raiseDispute,gas_price_gwei,Full_9,9,0.006,0,0.006,0.006,0.006,0.006,0.006
+raiseDispute,tx_cost_eth,Full_9,9,0,0,0,0,0,0,0
+resolveDispute,wall_duration_ms,First_9 (GREP),9,906.151,124.823,795.886,920.709,948.2833,707.719,1830.888
+resolveDispute,gas_used,First_9 (GREP),9,104159,0,104159,104159,104159,104159,104159
+resolveDispute,gas_price_gwei,First_9 (GREP),9,0.006,0,0.006,0.006,0.006,0.006,0.006
+resolveDispute,tx_cost_eth,First_9 (GREP),9,0,0,0,0,0,0,0
+resolveDispute,wall_duration_ms,Full_9,9,906.151,124.823,795.886,920.709,948.2833,707.719,1830.888
+resolveDispute,gas_used,Full_9,9,104159,0,104159,104159,104159,104159,104159
+resolveDispute,gas_price_gwei,Full_9,9,0.006,0,0.006,0.006,0.006,0.006,0.006
+resolveDispute,tx_cost_eth,Full_9,9,0,0,0,0,0,0,0
+transferProperty,wall_duration_ms,First_9 (GREP),9,780.066,256.585,696.425,953.01,924.3069,686.617,1719.035
+transferProperty,gas_used,First_9 (GREP),9,130538,0,130538,130538,130538,130538,130538
+transferProperty,gas_price_gwei,First_9 (GREP),9,0.006,0,0.006,0.006,0.006,0.006,0.006
+transferProperty,tx_cost_eth,First_9 (GREP),9,0,0,0,0,0,0,0
+transferProperty,wall_duration_ms,Full_9,9,780.066,256.585,696.425,953.01,924.3069,686.617,1719.035
+transferProperty,gas_used,Full_9,9,130538,0,130538,130538,130538,130538,130538
+transferProperty,gas_price_gwei,Full_9,9,0.006,0,0.006,0.006,0.006,0.006,0.006
+transferProperty,tx_cost_eth,Full_9,9,0,0,0,0,0,0,0
+setAdjudicator,wall_duration_ms,First_9 (GREP),9,875.742,241.558,746.783,988.341,952.0743,694.729,1710.249
+setAdjudicator,gas_used,First_9 (GREP),9,45789,19912,25877,45789,36939.2222,25877,45789
+setAdjudicator,gas_price_gwei,First_9 (GREP),9,0.006,0,0.006,0.006,0.006,0.006,0.006
+setAdjudicator,tx_cost_eth,First_9 (GREP),9,0,0,0,0,0,0,0
+setAdjudicator,wall_duration_ms,Full_9,9,875.742,241.558,746.783,988.341,952.0743,694.729,1710.249
+setAdjudicator,gas_used,Full_9,9,45789,19912,25877,45789,36939.2222,25877,45789
+setAdjudicator,gas_price_gwei,Full_9,9,0.006,0,0.006,0.006,0.006,0.006,0.006
+setAdjudicator,tx_cost_eth,Full_9,9,0,0,0,0,0,0,0
+Basic_OnChain,retrieval_latency_ms,First_9 (GREP),9,122.499,28.405,100.777,129.182,120.9733,75.599,201.909
+Basic_OnChain,retrieval_latency_ms,Full_9,9,122.499,28.405,100.777,129.182,120.9733,75.599,201.909
+Detailed_OnChain,retrieval_latency_ms,First_9 (GREP),9,127.964,33.066,105.799,138.865,121.6252,75.824,144.23
+Detailed_OnChain,retrieval_latency_ms,Full_9,9,127.964,33.066,105.799,138.865,121.6252,75.824,144.23
+Basic_DB,retrieval_latency_ms,First_9 (GREP),9,610.452,90.686,527.611,618.297,581.4521,502.378,644.458
+Basic_DB,retrieval_latency_ms,Full_9,9,610.452,90.686,527.611,618.297,581.4521,502.378,644.458
+Detailed_DB,retrieval_latency_ms,First_9 (GREP),9,554.781,97.906,513.727,611.633,557.8752,507.479,617.513
+Detailed_DB,retrieval_latency_ms,Full_9,9,554.781,97.906,513.727,611.633,557.8752,507.479,617.513
