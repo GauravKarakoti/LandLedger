@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, integer, timestamp, uuid, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, uuid, index, uniqueIndex, bigint } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const properties = pgTable(
@@ -9,7 +9,7 @@ export const properties = pgTable(
     legalIdentifier: varchar("legal_identifier", { length: 255 }).notNull(),
     location: text("location").notNull(),
     areaSqm: integer("area_sqm").notNull(),
-    valuationInr: integer("valuation_inr").notNull(),
+    valuationInr: bigint("valuation_inr", { mode: "number" }).notNull(),
     status: varchar("status", { length: 50 }).notNull().default("Active"), // Active, InDispute, Transferred, Frozen
     ownerName: varchar("owner_name", { length: 255 }).notNull(),
     registeredDate: timestamp("registered_date").notNull().defaultNow(),
@@ -31,7 +31,7 @@ export const transfers = pgTable(
       .references(() => properties.id, { onDelete: "cascade" }),
     previousOwner: varchar("previous_owner", { length: 42 }).notNull(),
     newOwner: varchar("new_owner", { length: 42 }).notNull(),
-    considerationInr: integer("consideration_inr"), // Optional: if sale amount is recorded off-chain
+    considerationInr: bigint("consideration_inr", { mode: "number" }), // Optional: if sale amount is recorded off-chain
     status: varchar("status", { length: 50 }).notNull().default("COMPLETED"),
     transactionHash: varchar("transaction_hash", { length: 66 }).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
